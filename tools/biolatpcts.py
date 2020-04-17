@@ -1,9 +1,9 @@
 #!/usr/bin/python
 #
-# io_latencies.py  Monitor IO latency distribution of a block device.
+# biolatpcts.py  Monitor IO latency distribution of a block device.
 #
-#  $ ./io_latencies.py 259:0
-#  259:0      p1    p5   p10   p16   p25   p50   p75   p84   p90   p95   p99  p100
+#  $ ./biolatpcts.py /dev/nvme0n1
+#  nvme0n1    p1    p5   p10   p16   p25   p50   p75   p84   p90   p95   p99  p100
 #  read     95us 175us 305us 515us 895us 985us 995us 1.5ms 2.5ms 3.5ms 4.5ms  10ms
 #  write     5us   5us   5us  15us  25us 135us 765us 855us 885us 895us 965us 1.5ms
 #  discard   5us   5us   5us   5us 135us 145us 165us 205us 385us 875us 1.5ms 2.5ms

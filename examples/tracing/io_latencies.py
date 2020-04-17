@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 #
 # io_latencies.py  Monitor IO latency distribution of a block device.
 #

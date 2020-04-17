@@ -18,6 +18,7 @@ from time import sleep
 import argparse
 import json
 import sys
+import os
 
 description = """
 Monitor IO latency distribution of a block device
@@ -25,8 +26,8 @@ Monitor IO latency distribution of a block device
 
 parser = argparse.ArgumentParser(description = description,
                                  formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('devno', metavar='MAJ:MIN', type=str,
-                    help='Target block device number')
+parser.add_argument('dev', metavar='DEV', type=str,
+                    help='Target block device (/dev/DEVNAME, DEVNAME or MAJ:MIN)')
 parser.add_argument('-i', '--interval', type=int, default=3,
                     help='Report interval')
 parser.add_argument('-w', '--which', choices=['from-rq-alloc', 'after-rq-alloc', 'on-device'],
@@ -99,6 +100,18 @@ void kprobe_blk_account_io_done(struct pt_regs *ctx, struct request *rq, u64 now
 args = parser.parse_args()
 args.pcts.sort(key=lambda x: float(x))
 
+try:
+    major = int(args.dev.split(':')[0])
+    minor = int(args.dev.split(':')[1])
+except Exception:
+    if '/' in args.dev:
+        stat = os.stat(args.dev)
+    else:
+        stat = os.stat('/dev/' + args.dev)
+
+    major = os.major(stat.st_rdev)
+    minor = os.minor(stat.st_rdev)
+
 if args.which == 'from-rq-alloc':
     start_time_field = 'alloc_time_ns'
 elif args.which == 'after-rq-alloc':
@@ -109,8 +122,8 @@ else:
     die()
 
 bpf_source = bpf_source.replace('__START_TIME_FIELD__', start_time_field)
-bpf_source = bpf_source.replace('__MAJOR__', str(int(args.devno.split(':')[0])))
-bpf_source = bpf_source.replace('__MINOR__', str(int(args.devno.split(':')[1])))
+bpf_source = bpf_source.replace('__MAJOR__', str(major))
+bpf_source = bpf_source.replace('__MINOR__', str(minor))
 
 bpf = BPF(text=bpf_source)
 bpf.attach_kprobe(event="blk_account_io_done", fn_name="kprobe_blk_account_io_done")
@@ -235,7 +248,7 @@ while True:
             result[io_type[iot]] = lats
         print(json.dumps(result), flush=True)
     else:
-        print('\n{:<7}'.format(args.devno), end='')
+        print('\n{:<7}'.format(os.path.basename(args.dev)), end='')
         widths = []
         for pct in args.pcts:
             widths.append(max(len(pct), 5))
